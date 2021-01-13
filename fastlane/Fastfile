@@ -1,0 +1,115 @@
+# This file contains the fastlane.tools configuration
+# You can find the documentation at https://docs.fastlane.tools
+#
+# For a list of all available actions, check out
+#
+#     https://docs.fastlane.tools/actions
+#
+# For a list of all available plugins, check out
+#
+#     https://docs.fastlane.tools/plugins/available-plugins
+#
+
+# Uncomment the line if you want fastlane to automatically update itself
+# update_fastlane
+
+default_platform(:android)
+
+platform :android do
+  desc "Runs all the tests"
+  lane :test do
+    gradle(task: "test")
+  end
+
+  desc "Submit a new Beta Build to Crashlytics Beta"
+  lane :beta do
+    gradle(task: "clean assembleRelease")
+    crashlytics
+  
+    # sh "your_script.sh"
+    # You can also use other beta testing services here
+  end
+
+  desc "Deploy a new version to the Google Play"
+  lane :deploy do
+    gradle(task: "clean assembleRelease")
+    upload_to_play_store
+  end
+
+  desc "Clean build and build apk debug"
+  lane :clean_and_build_apk do
+    gradle(task: "clean")
+    gradle(task: "assembleDebug")
+  end
+
+  desc "Build debug and test APK for screenshots"
+  lane :build_for_screengrab do
+    gradle(
+      task: 'clean'
+    )
+    gradle(
+      task: 'assemble',
+      build_type: 'Debug'
+    )
+    gradle(
+      task: 'assemble',
+      build_type: 'AndroidTest'
+    )
+  end
+
+  desc "Notify a message to Slack after run successful"
+  lane :notify_slack_message do
+    ENV["SLACK_URL"]
+
+    gradle(task: "clean assembleDebug")
+    slack(
+      message: "Slack Message Delivered Successfully",
+      success: true,
+      payload: {
+        "Build Date" => Time.new.to_s,
+        "Build By" => "huypham"
+      }
+    )
+  end
+
+  desc "Build a Debug or Staging APK & deploy to slack"
+  lane :slack_apk_build do |options|
+    gradle(
+      task: "assemble",
+      build_type: options[:build_type],
+      print_command: true
+    )
+    upload_to_slack
+    slack(
+      message: ":rocket: *Build #{options[:build_type]} APK Successful!* :rocket:",
+      success: true,
+      payload: {
+        "Build Date" => Time.new.to_s,
+        "Build By" => options[:build_type]
+      }
+    )
+  end
+
+   desc "Upload APK to Slack channel"
+   private_lane :upload_to_slack do |options|
+      file_path = lane_context[SharedValues::GRADLE_APK_OUTPUT_PATH]
+       file_name = file_path.gsub(/\/.*\//,"")
+       access_token = ENV["ACCESS_TOKEN"]
+       channel_name = "fastlane_report_and_apk"
+
+       sh "echo Uploading " + file_name + " to Slack"
+       sh "curl https://slack.com/api/files.upload -F token=\"" + access_token + "\" -F channels=\"" + channel_name + "\" -F title=\"" + file_name + "\" -F filename=\"" + file_name + "\" -F file=@" + file_path
+     end
+
+     desc "Deploy latest debug to Firebase App Distribution"
+     lane :distribute do
+       build_android_app(task: "assembleDebug")
+
+       firebase_app_distribution(
+         app: ENV['FIREBASE_APP_ID_ANDROID'],
+         groups: "group_1",
+         release_notes: Fastlane Release note Debug env
+       )
+     end
+
+end

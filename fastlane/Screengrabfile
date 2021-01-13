@@ -1,0 +1,18 @@
+# Set the path to the Android SDK
+android_home('$PATH')
+
+# Starts adb in root mode, giving you elevated permissions to writing to the device
+use_adb_root(true)
+
+# Sets the unique package name of your app
+app_package_name('com.example.learnfastlane')
+
+# The file path to the app APK and test APK files
+app_apk_path('app/build/outputs/apk/debug/app-debug.apk')
+tests_apk_path('app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk')
+
+# Designates the areas where you want to create screenshots
+locales(['en-US', 'fr-FR'])
+
+# If set to true, this clears all previously-generated screenshots in your local output directory before creating new ones
+clear_previous_screenshots(true)

@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">fastlaneandbeyond</string>
+    <string name="slogan_label_text">Make your decision FASTER</string>
+    <string name="ask_label_text">ASK</string>
 </resources>
